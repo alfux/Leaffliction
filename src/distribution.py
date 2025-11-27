@@ -106,7 +106,7 @@ def get_args(description: str = '') -> Namespace:
 
 
 def main() -> int:
-    """Test main.
+    """Display a pie chart and a bar chart of differents file categories.
 
     Returns:
         int: return status 0 (success) 1 (error).
