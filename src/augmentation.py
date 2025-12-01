@@ -65,12 +65,10 @@ class Augmentation:
         range_j = np.max(vec[:, 1, :]) - np.min(vec[:, 1, :])
         ratio = np.max([(h - 1) / range_i, (w - 1) / range_j])
         vec = np.round(vec * ratio + trs)
-        vec[:, 0, :] = np.clip(vec[:, 0, :], 0, h - 1)
-        vec[:, 1, :] = np.clip(vec[:, 1, :], 0, w - 1)
+        i = np.clip(vec[:, 0, :], 0, h - 1).astype(int)
+        j = np.clip(vec[:, 1, :], 0, w - 1).astype(int)
         img = img * 0 + 255
-        for i in range(h):
-            for j in range(w):
-                img[*vec.astype(int)[i].T[j]] = self._img[i, j]
+        img[i, j] = self._img
         return img
 
 
