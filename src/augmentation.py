@@ -30,7 +30,8 @@ class Augmentation:
         self._rot = self._rotate()
         self._skw = self._skew()
         self._shr = self._shear()
-        plt.imshow(self._shr)
+        self._crp = self._crop()
+        plt.imshow()
 
     def show(self: Self) -> None:
         """Show the plot."""
@@ -87,7 +88,13 @@ class Augmentation:
     def _crop(self: Self) -> ndarray:
         """Randomly crop the image.
 
-        Args:"""
+        Returns:
+            ndarray: The croped image.
+        """
+        h, w = self._h // 2, self._w // 2
+        a = np.int16(rng.random_sample() * h)
+        b = np.int16(rng.random_sample() * w)
+        return self._img.copy()[a:(a + h), b:(b + h)]
 
     def _rngrotmat(self: Self) -> ndarray:
         """Generate a random 3D rotation matrix.
