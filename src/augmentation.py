@@ -35,6 +35,16 @@ class Augmentation:
 
     def show(self: Self) -> None:
         """Show the plot."""
+        fig, axes = plt.subplots(1, 7, figsize=(16, 9))
+        for axis in axes:
+            axis.axis("off")
+        axes[0].imshow(self._img)
+        axes[1].imshow(self._flp)
+        axes[2].imshow(self._rot)
+        axes[3].imshow(self._skw)
+        axes[4].imshow(self._shr)
+        axes[5].imshow(self._crp)
+        axes[6].imshow(self._dst)
         plt.show()
 
     def _flip(self: Self) -> ndarray:
@@ -107,7 +117,7 @@ class Augmentation:
         norms = np.sqrt(i ** 2 + j ** 2)
         maximum = np.min([self._vec.shape[0] // 2, self._vec.shape[2] // 2])
         intensity = (1 - np.clip(norms / maximum, 0, 1))
-        rads = (np.pi / 3) * intensity
+        rads = (np.pi / 2) * intensity
         cos, sin = np.cos(rads), np.sin(rads)
         out_i = cos * i - sin * j
         out_j = sin * i + cos * j
@@ -131,7 +141,9 @@ class Augmentation:
             ndarry: Rotation matrix.
         """
         rad = r = 1 - 2 * rng.binomial(1, 0.5)
-        r = r * (rng.random_sample() * 0.8 * np.pi + 0.1 * np.pi) / 2
+        r = r * (
+            rng.random_sample() * 0.8 * (np.pi / 4) + 0.1 * (np.pi / 4)
+        ) / 2
         axis = rng.random_sample(3) + 1e-15
         axis = axis / np.linalg.norm(axis)
         lrq = Quaternion(np.cos(rad), *(np.sin(rad) * axis))
