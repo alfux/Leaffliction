@@ -31,7 +31,7 @@ class Augmentation:
         self._skw = self._skew()
         self._shr = self._shear()
         self._crp = self._crop()
-        plt.imshow()
+        self._dst = self._distortion()
 
     def show(self: Self) -> None:
         """Show the plot."""
@@ -91,10 +91,38 @@ class Augmentation:
         Returns:
             ndarray: The croped image.
         """
-        h, w = self._h // 2, self._w // 2
-        a = np.int16(rng.random_sample() * h)
-        b = np.int16(rng.random_sample() * w)
+        factor = rng.random_sample() * 0.25 + 0.5
+        h, w = np.int16(factor * self._h), np.int16(factor * self._w)
+        a = np.int16(rng.random_sample() * (self._h - h))
+        b = np.int16(rng.random_sample() * (self._w - w))
         return self._img.copy()[a:(a + h), b:(b + h)]
+
+    def _distortion(self: Self) -> ndarray:
+        """Randomly twist the image.
+
+        Returns:
+            ndarray: The twisted image.
+        """
+        i, j = self._vec[:, 0, :], self._vec[:, 1, :]
+        norms = np.sqrt(i ** 2 + j ** 2)
+        maximum = np.min([self._vec.shape[0] // 2, self._vec.shape[2] // 2])
+        intensity = (1 - np.clip(norms / maximum, 0, 1))
+        rads = (np.pi / 3) * intensity
+        cos, sin = np.cos(rads), np.sin(rads)
+        out_i = cos * i - sin * j
+        out_j = sin * i + cos * j
+        twist = np.stack([out_i, out_j], axis=1).astype(float)
+        twist = self._scale(twist, base=self._img.copy())
+        sub0 = twist[1:-1, 1:-1]
+        sub_og = self._img[1:-1, 1:-1]
+        sub1, sub3 = twist[:-2, :-2].astype(float), twist[2:, 2:].astype(float)
+        sub2, sub4 = twist[2:, :-2].astype(float), twist[:-2, 2:].astype(float)
+        idx = np.where(np.all(sub0 == sub_og, axis=-1))
+        sub0[idx] = (sub1[idx] + sub2[idx] + sub3[idx] + sub4[idx]) / 4
+        sub_int = np.repeat(intensity[1:-1, 1:-1, None] ** .01, 3, axis=2)[idx]
+        sub0[idx] = sub_int * sub0[idx] + (1 - sub_int) * sub_og[idx]
+        twist[1:-1, 1:-1] = sub0
+        return twist
 
     def _rngrotmat(self: Self) -> ndarray:
         """Generate a random 3D rotation matrix.
@@ -129,7 +157,7 @@ class Augmentation:
         trs = np.repeat(trs[None, :, :], h, axis=0)
         return h, w, vec, trs
 
-    def _scale(self: Self, vec: ndarray) -> ndarray:
+    def _scale(self: Self, vec: ndarray, base: ndarray = None) -> ndarray:
         """Scale the image to fit the original frame.
 
         Args:
@@ -143,7 +171,10 @@ class Augmentation:
         vec = np.round(vec * ratio + self._trs)
         i = np.clip(vec[:, 0, :], 0, self._h - 1).astype(int)
         j = np.clip(vec[:, 1, :], 0, self._w - 1).astype(int)
-        img = np.full(self._img.shape, 255, dtype=np.uint8)
+        if base is not None:
+            img = base
+        else:
+            img = np.full(self._img.shape, 255, dtype=np.uint8)
         img[i, j] = self._img
         return img
 
