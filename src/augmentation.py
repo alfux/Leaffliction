@@ -40,6 +40,46 @@ class Augmentation:
     def show(self: Self) -> None:
         """Show the plot."""
         _, axes = plt.subplots(len(self._path), 7, figsize=(16, 9))
+        if len(self._path) > 1:
+            self._multi_show(axes)
+        else:
+            self._mono_show(axes)
+        plt.show()
+
+    def _mono_show(self: Self, axes: ndarray) -> None:
+        """Show multiple plot lines.
+
+        Args:
+            axes (ndarray): list of plot axes.
+        """
+        axes[0].set_title("Original")
+        axes[0].axis("off")
+        axes[0].imshow(self._img[0])
+        axes[1].set_title("Flip")
+        axes[1].axis("off")
+        axes[1].imshow(self._flp[0])
+        axes[2].set_title("Rotate")
+        axes[2].axis("off")
+        axes[2].imshow(self._rot[0])
+        axes[3].set_title("Skew")
+        axes[3].axis("off")
+        axes[3].imshow(self._skw[0])
+        axes[4].set_title("Shear")
+        axes[4].axis("off")
+        axes[4].imshow(self._shr[0])
+        axes[5].set_title("Crop")
+        axes[5].axis("off")
+        axes[5].imshow(self._crp[0])
+        axes[6].set_title("Distortion")
+        axes[6].axis("off")
+        axes[6].imshow(self._dst[0])
+
+    def _multi_show(self: Self, axes: ndarray) -> None:
+        """Show multiple plot lines.
+
+        Args:
+            axes (ndarray): list of plot axes.
+        """
         axes[0, 0].set_title("Original")
         axes[0, 1].set_title("Flip")
         axes[0, 2].set_title("Rotate")
@@ -62,7 +102,6 @@ class Augmentation:
             axes[i, 5].imshow(self._crp[i])
             axes[i, 6].axis("off")
             axes[i, 6].imshow(self._dst[i])
-        plt.show()
 
     def save(self: Self, dst: str | Path = None) -> None:
         """Save images to their original directory.
@@ -182,7 +221,8 @@ class Augmentation:
             [self._vec[i].shape[0] // 2, self._vec[i].shape[2] // 2]
         )
         intensity = (1 - np.clip(norms / maximum, 0, 1))
-        rads = (np.pi / 2) * intensity
+        rads = (np.pi / 4) + rng.random_sample() * (np.pi / 4)
+        rads = (1 - 2 * rng.binomial(1, 0.5)) * rads * intensity
         cos, sin = np.cos(rads), np.sin(rads)
         out_i = cos * a - sin * b
         out_j = sin * a + cos * b
@@ -287,7 +327,7 @@ def get_args(description: str = '') -> Namespace:
         Namespace: The arguments.
     """
     av = arg.ArgumentParser(description=description)
-    av.add_argument("files", nargs='*', help="Image files")
+    av.add_argument("files", help="Image files or directory")
     av.add_argument("--save-path", default=None, help="Save directory")
     av.add_argument("--no-show", action="store_true", help="Set display off")
     av.add_argument("--no-save", action="store_true", help="Set saving off")
@@ -308,7 +348,10 @@ def main() -> int:
             logging.basicConfig(level=logging.DEBUG, format=fmt)
         else:
             logging.basicConfig(level=logging.INFO, format=fmt)
-        aug = Augmentation(av.files)
+        path = Path(av.files)
+        if path.is_dir():
+            path = [Path(path / p) for p in os.listdir(path)]
+        aug = Augmentation(path)
         if not av.no_show:
             aug.show()
         if not av.no_save:
