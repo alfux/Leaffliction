@@ -7,12 +7,12 @@ from pathlib import Path
 import sys
 from typing import Self, Generator
 
+import matplotlib.pyplot as plt
 from matplotlib.axes import Axes
 from matplotlib.container import BarContainer
 from matplotlib.figure import Figure
 from matplotlib.patches import Wedge
 from matplotlib.text import Text
-import matplotlib.pyplot as plt
 
 
 class Distribution:

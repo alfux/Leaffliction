@@ -11,8 +11,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 from numpy import ndarray
 from numpy import random as rng
+from tqdm import tqdm
 
-from quaternion import Quaternion
+from .quaternion import Quaternion
 
 
 class Augmentation:
@@ -351,11 +352,14 @@ def main() -> int:
         path = Path(av.files)
         if path.is_dir():
             path = [Path(path / p) for p in os.listdir(path)]
-        aug = Augmentation(path)
-        if not av.no_show:
-            aug.show()
-        if not av.no_save:
-            aug.save(av.save_path)
+        else:
+            path = [path]
+        for i in tqdm(range(0, len(path), 10)):
+            aug = Augmentation(path[i:i + 10])
+            if not av.no_show:
+                aug.show()
+            if not av.no_save:
+                aug.save(av.save_path)
         return 0
     except Exception as err:
         debug = "av" in locals() and hasattr(av, "debug") and av.debug

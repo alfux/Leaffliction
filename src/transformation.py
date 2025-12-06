@@ -9,6 +9,7 @@ from typing import Self
 
 import matplotlib.pyplot as plt
 import numpy as np
+from numpy import ndarray
 
 
 class Transformation:
@@ -25,6 +26,47 @@ class Transformation:
         else:
             self._path = [path if isinstance(path, Path) else Path(path)]
         self._img = [plt.imread(p) for p in self._path]
+        self._hst = [self._color_histogram(i) for i in range(len(self._path))]
+
+    def _color_histogram(self: Self, i: int) -> ndarray:
+        """Compute color histogram arrays.
+
+        Args:
+            i (int): Image index.
+        Returns:
+            ndarray: Histogram matrix.
+        """
+        img = self._img[i]
+        r, g, b = self.rgb_color(img)
+        by, gm, lightness = self.lab_color(img)
+        h, s, v = self.hsv_color(img)
+
+    @staticmethod
+    def rgb_color(img: ndarray) -> tuple[ndarray]:
+        """Split an RGB image in Red, Green and Blue maps.
+
+        Args:
+            img (ndarray): The image.
+        Returns:
+            tuple[ndarray]: R, G and B maps.
+        """
+
+        r, g, b = img[:, :, 0], img[:, :, 1], img[:, :, 2]
+
+    @staticmethod
+    def hsv_color(img: ndarray) -> tuple[ndarray]:
+        """Convert an RGB image to a Hue, Saturation and Value maps.
+
+        Args:
+            img (ndarray): The image.
+        Returns:
+            tuple[ndarray]: H, S and V maps.
+        """
+        r, g, b = img[:, :, 0], img[:, :, 1], img[:, :, 2]
+        v = np.max([r, g, b], axis=0)
+        s = np.zeros(v.shape)
+        s[v != 0] = (v - np.min([r, g, b], axis=0)) / v
+        h =
 
 
 def get_args(description: str = '') -> Namespace:
