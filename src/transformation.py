@@ -64,9 +64,16 @@ class Transformation:
         """
         r, g, b = img[:, :, 0], img[:, :, 1], img[:, :, 2]
         v = np.max([r, g, b], axis=0)
+        span = v - np.min([r, g, b], axis=0)
         s = np.zeros(v.shape)
-        s[v != 0] = (v - np.min([r, g, b], axis=0)) / v
-        h =
+        s[v != 0] = span / v
+        h = np.zeros(v.shape)
+        idx = v == r
+        h[idx] = (g[idx] - b[idx]) / span[idx]
+        idx = v == g
+        h[idx] = (r[idx] - b[idx]) / span[idx]
+        idx = v == b
+        h[idx] = (r[idx] - g[idx]) / span[idx]
 
 
 def get_args(description: str = '') -> Namespace:
