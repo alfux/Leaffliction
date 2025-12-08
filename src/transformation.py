@@ -51,29 +51,35 @@ class Transformation:
             tuple[ndarray]: R, G and B maps.
         """
 
-        r, g, b = img[:, :, 0], img[:, :, 1], img[:, :, 2]
+        img[:, :, 0], img[:, :, 1], img[:, :, 2]
 
     @staticmethod
-    def hsv_color(img: ndarray) -> tuple[ndarray]:
+    def
+
+    @staticmethod
+    def hsv_color(img: ndarray) -> tuple[ndarray, ndarray, ndarray]:
         """Convert an RGB image to a Hue, Saturation and Value maps.
 
         Args:
             img (ndarray): The image.
         Returns:
-            tuple[ndarray]: H, S and V maps.
+            tuple[ndarray, ndarray, ndarray]: H, S and V maps.
         """
+        img = img.astype(float)
         r, g, b = img[:, :, 0], img[:, :, 1], img[:, :, 2]
-        v = np.max([r, g, b], axis=0)
-        span = v - np.min([r, g, b], axis=0)
-        s = np.zeros(v.shape)
-        s[v != 0] = span / v
-        h = np.zeros(v.shape)
-        idx = v == r
-        h[idx] = (g[idx] - b[idx]) / span[idx]
-        idx = v == g
-        h[idx] = (r[idx] - b[idx]) / span[idx]
-        idx = v == b
-        h[idx] = (r[idx] - g[idx]) / span[idx]
+        v = img.max(axis=2)
+        span = v - img.min(axis=2)
+        s = np.zeros_like(v, dtype=float)
+        np.divide(span, v, out=s, where=(v != 0))
+        h = np.zeros_like(v, dtype=float)
+        defined = (span != 0)
+        mask_r = defined & (v == r)
+        mask_g = defined & ~mask_r & (v == g)
+        mask_b = defined & ~(mask_r | mask_g) & (v == b)
+        h[mask_r] = (60 * (g[mask_r] - b[mask_r]) / span[mask_r]) % 360
+        h[mask_g] = 60 * (b[mask_g] - r[mask_g]) / span[mask_g] + 120
+        h[mask_b] = 60 * (r[mask_b] - g[mask_b]) / span[mask_b] + 240
+        return h, s, v
 
 
 def get_args(description: str = '') -> Namespace:
