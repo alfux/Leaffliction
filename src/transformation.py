@@ -119,7 +119,7 @@ class Transformation:
         return self._hsv[2]
 
     def _gaussian_blur(
-            self: Self, chan: ndarray, *, mean: float = 0, std: float = 1
+            self: Self, chan: ndarray, *, radius: int = 10
     ) -> ndarray:
         """Gaussian convolution transformation of an array.
 
@@ -130,20 +130,19 @@ class Transformation:
         Returns:
             ndarray: The convolution.
         """
-        convoluted = np.empty_like(chan)
-        np.gri
-        n = np.repeat(np.arange(chan.shape[0])[:, None], chan.shape[1], axis=1)
-        m = np.repeat(np.arange(chan.shape[1])[None, :], chan.shape[0], axis=0)
-        src = np.stack([n, m], axis=2)
-        src = src - mean
+        span = np.arange(2 * radius + 1) - radius
+        n, m = np.meshgrid(span, span, indexing="ij")
+        kernel = np.exp((-n ** 2 - m ** 2) / 2)
+        kernel /= kernel.sum()
+        padded = np.pad(chan, radius)
+        stride = np.lib.stride_tricks.as_strided(padded, ())
+        convolution = np.empty_like(chan)
         for i in range(chan.shape[0]):
             for j in range(chan.shape[1]):
-                v = np.array([i, j])
-                exp = np.exp(-((src - v) ** 2).sum(axis=2) / (2 * std ** 2))
-                convoluted[i, j] = np.sum(exp * chan)
-                print(convoluted[i, j])
-        convoluted = (convoluted / np.max(convoluted)) * 255
-        return convoluted.astype(int)
+                convolution[i, j] = (
+                    padded[i:(i + len(span)), j:(j + len(span))] * kernel
+                ).sum()
+        return convolution.astype(int)
 
     @staticmethod
     def to_rgb(img: ndarray) -> ndarray:
