@@ -32,7 +32,7 @@ class Transformation:
         """Show image transformations."""
         # fig = plt.figure(figsize=(16, 9))
         # ax: Axes = fig.add_axes([0.1, 0.1, 0.8, 0.8])
-        img = self._gaussian_blur(self.green)
+        img = self._gaussian_blur(self._rgb, np.array([0, 1, 0]))
         img = np.broadcast_to(img[:, :, None], (img.shape[0], img.shape[1], 3))
         plt.imshow(img.astype(int))
         plt.show()
@@ -119,30 +119,44 @@ class Transformation:
         return self._hsv[2]
 
     def _gaussian_blur(
-            self: Self, chan: ndarray, *, radius: int = 10
+            self: Self, rgb: ndarray, color: ndarray, *, std: float = 1,
+            radius: int = 10
     ) -> ndarray:
         """Gaussian convolution transformation of an array.
 
         Args:
-            chan (ndarray): 2D matrix of values.
-            mean (float): Mean of the gaussian.
+            rgb (ndarray): 3D matrix of values. Axis 0 should contain R, G,
+                and B matrices.
             std (float): Standard deviation of the gaussian.
+            radius (float): Controls the kernel radius.
         Returns:
             ndarray: The convolution.
         """
+        r, g, b = Transformation.softmax(rgb) * 255
+        chan = (r * color[0] + g * color[1] + b * color[2]) / color.sum()
         span = np.arange(2 * radius + 1) - radius
         n, m = np.meshgrid(span, span, indexing="ij")
-        kernel = np.exp((-n ** 2 - m ** 2) / 2)
+        kernel = np.exp((-n ** 2 - m ** 2) / (2 * std ** 2))
         kernel /= kernel.sum()
         padded = np.pad(chan, radius)
-        stride = np.lib.stride_tricks.as_strided(padded, ())
-        convolution = np.empty_like(chan)
-        for i in range(chan.shape[0]):
-            for j in range(chan.shape[1]):
-                convolution[i, j] = (
-                    padded[i:(i + len(span)), j:(j + len(span))] * kernel
-                ).sum()
-        return convolution.astype(int)
+        shape = (*chan.shape, *kernel.shape)
+        strides = (*padded.strides, *padded.strides)
+        view = np.lib.stride_tricks.as_strided(padded, shape, strides)
+        view = (view * kernel).sum(axis=(2, 3))
+        return view
+
+    @staticmethod
+    def softmax(x: ndarray) -> ndarray:
+        """Sorftmax function.
+
+        Args:
+            x (ndarray): Input vectors. Axis 0 defines each different vector.
+        Returns:
+            ndarray: output distribution.
+        """
+        x = np.exp(x)
+        norm = x.sum(axis=0)
+        return x / norm
 
     @staticmethod
     def to_rgb(img: ndarray) -> ndarray:
